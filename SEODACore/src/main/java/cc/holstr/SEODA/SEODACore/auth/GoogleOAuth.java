@@ -1,6 +1,7 @@
 package cc.holstr.SEODA.SEODACore.auth;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -50,30 +51,31 @@ public class GoogleOAuth {
 	private String accountNickname; 
 	
 		public GoogleOAuth() {
-			setAccountNickname("user");
-			Set<String> scopes = Collections.singleton(AnalyticsScopes.ANALYTICS_READONLY 
-		    		+ " " +WebmastersScopes.WEBMASTERS_READONLY 
-		    		+ " " + SheetsScopes.SPREADSHEETS
-		    		+ " " + DriveScopes.DRIVE
-		    		);
-			setScopes(scopes);
+			define("user");
 		}
 		
 		public GoogleOAuth(String accountNickname) {
-			setAccountNickname(accountNickname);
+			define(accountNickname);
+		}
+		
+		public GoogleOAuth(String accountNickname, Set<String> scopes) {
+			define(accountNickname, scopes);
+		}
+	
+		public void define(String accountNickname) {
 			Set<String> scopes = Collections.singleton(AnalyticsScopes.ANALYTICS_READONLY 
 		    		+ " " +WebmastersScopes.WEBMASTERS_READONLY 
 		    		+ " " + SheetsScopes.SPREADSHEETS
 		    		+ " " + DriveScopes.DRIVE
 		    		);
-			setScopes(scopes);
+			define(accountNickname, scopes);
 		}
 		
-		public GoogleOAuth(String accountNickname, Set<String> scopes) {
+		public void define(String accountNickname, Set<String> scopes) {
 			setAccountNickname(accountNickname);
 			setScopes(scopes);
 		}
-	
+		
 		private Credential authorize() throws Exception {
 		  
 		  try {
