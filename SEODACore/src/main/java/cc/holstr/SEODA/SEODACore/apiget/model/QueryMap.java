@@ -1,10 +1,10 @@
 package cc.holstr.SEODA.SEODACore.apiget.model;
 
-import java.util.HashMap;
+import java.util.TreeMap;
 
 import cc.holstr.SEODA.SEODACore.apiget.GoogleGet.APIQuery;
 
-public class QueryMap <T extends APIQuery> extends HashMap<String, T>{
+public class QueryMap <T extends APIQuery> extends TreeMap<String, T>{
 	
 	/**
 	 * 

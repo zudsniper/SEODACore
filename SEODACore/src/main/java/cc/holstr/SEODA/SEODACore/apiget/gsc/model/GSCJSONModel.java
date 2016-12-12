@@ -38,21 +38,21 @@ public class GSCJSONModel {
 	@Expose
 	private Integer startRow;
 
-	public static GSCJSONModel build(String startDate, String endDate, String groupType, String dimension, String expression) {
+	public static GSCJSONModel build(String startDate, String endDate, String groupType, String dimension, String operator, String expression) {
 		GSCJSONModel model = new GSCJSONModel();
 		model.setStartDate(startDate);
 		model.setEndDate(endDate);
-		model.buildDFGroup(groupType, dimension, expression);
-		
+		model.buildDFGroup(groupType, dimension, operator, expression);
 		return model;
 	}
 	
-	public void buildDFGroup(String groupType, String dimension, String expression) {
+	public void buildDFGroup(String groupType, String dimension, String operator, String expression) {
 		List<DimensionFilterGroup> fgroups = new ArrayList<DimensionFilterGroup>();
 		DimensionFilterGroup fgroup = new DimensionFilterGroup();
 		List<Filter> filters = new ArrayList<Filter>();
 		Filter filter = new Filter();
 		filter.setDimension(dimension);
+		filter.setOperator(operator);
 		filter.setExpression(expression);
 		filters.add(filter);
 		fgroup.setGroupType(groupType);
