@@ -1,7 +1,6 @@
 package cc.holstr.SEODA.SEODACore.auth;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -21,8 +20,6 @@ import com.google.api.services.analytics.AnalyticsScopes;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.webmasters.WebmastersScopes;
-
-import cc.holstr.SEODA.SEODACore.properties.Unpacker;
 
 public class GoogleOAuth {
 	

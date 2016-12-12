@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.TreeMap;
@@ -15,9 +16,9 @@ import com.google.api.services.webmasters.Webmasters;
 import cc.holstr.SEODA.SEODACore.apiget.GoogleGet;
 import cc.holstr.SEODA.SEODACore.apiget.gsc.model.GSCJSONModel;
 import cc.holstr.SEODA.SEODACore.apiget.gsc.model.GSCJSONResponseModel;
+import cc.holstr.SEODA.SEODACore.apiget.gsc.model.RankModel;
 import cc.holstr.SEODA.SEODACore.apiget.model.QueryMap;
 import cc.holstr.SEODA.SEODACore.auth.GoogleOAuth;
-import cc.holstr.SEODA.SEODACore.http.HandledGoogleHttpHelper;
 import cc.holstr.SEODA.SEODACore.http.RetryingGoogleHttpHelper;
 import cc.holstr.SEODA.SEODACore.output.model.Position;
 import cc.holstr.SEODA.SEODACore.properties.Properties;
@@ -65,7 +66,13 @@ public class GoogleSearchConsole extends GoogleGet {
 			QueryMap<GSCQuery> temp = new QueryMap<GSCQuery>();
 			temp.put(new AllQueries());
 			temp.put(new DesktopQuery());
-			//TODO: more
+			temp.put(new ContainsQuery(Properties.getConfig().getString("GSC.containsTerm")));
+			temp.put(new Blank("Term List",2));
+			temp.put(new GSCTermRankQuery("term1",Properties.getConfig().getString("GSC.term1")));
+			temp.put(new GSCTermRankQuery("term2",Properties.getConfig().getString("GSC.term2")));
+			temp.put(new GSCTermRankQuery("term3",Properties.getConfig().getString("GSC.term3")));
+			temp.put(new GSCRankList("TopR (Queries)","query"));
+			temp.put(new GSCRankList("TopR (Pages)","page"));
 			return temp;
 		}
 
@@ -95,6 +102,8 @@ public class GoogleSearchConsole extends GoogleGet {
 	public String[] get(Date d) {
 		out = new ArrayList<String>();
 		for(String item : template) {
+			System.out.println(item);
+			System.out.println("validQueries contains item : " + validQueries.containsKey(item));
 			GSCQuery query = (GSCQuery)validQueries.get(item);
 			if(query!=null) {
 				query.get(d);
@@ -123,6 +132,186 @@ public class GoogleSearchConsole extends GoogleGet {
 		
 	}
 	
+	private class GSCRankList extends GSCQuery {
+
+		private String dimensionType;
+		
+		public GSCRankList(String name,String dimensionType) {
+			super(name);
+			this.dimensionType = dimensionType;
+		}
+
+		@Override
+		public void get(Date d) {
+			out.add("");
+			
+			model = new GSCJSONModel();
+			
+			model.setStartDate(queryFormat.format(getWeekDayBefore(d)));
+			model.setEndDate(queryFormat.format(d));
+			List<String> dimensions = new ArrayList<String>();
+			dimensions.add(dimensionType);
+			model.setDimensions(dimensions);
+			model.setRowLimit(25);
+		
+		System.out.println(gson.toJson(model));
+		
+		InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
+		Reader reader;
+		try {
+			reader = new InputStreamReader(in, "UTF-8");
+			GSCJSONResponseModel result = gson.fromJson(reader, GSCJSONResponseModel.class);
+			
+			List<RankModel> ranks = new ArrayList<RankModel>();
+			
+			for(GSCJSONResponseModel.Row row : result.getRows()) {
+				if(row!=null) {
+					String key = row.getKeys().get(0);
+					double clicks = row.getClicks();
+					
+					ranks.add(new RankModel(key,clicks));
+				} 
+			}
+			Collections.sort(ranks);
+			for(RankModel rank : ranks) {
+				out.add(rank.getKey()+", "+rank.getClicks());
+			}
+			
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		}
+		
+	}
+	
+	private class Blank extends GSCQuery {
+
+		private int spaces;
+		
+		public Blank(String name,int spaces) {
+			super(name);
+			this.spaces = spaces;
+		}
+		
+		@Override
+		public void get(Date d) {
+			for(int i = 0; i<spaces; i++) {
+				out.add("");
+			}
+		}
+		
+	}
+	
+	private class GSCTermRankQuery extends GSCQuery {
+
+		private String term;
+		
+		public GSCTermRankQuery(String name, String term) {
+			super("%w"+name+"%");
+			this.term = term;
+		}
+		
+		@Override
+		public void get(Date d) {
+			out.add("");
+			
+			model = GSCJSONModel.build(
+						queryFormat.format(getWeekDayBefore(d)),
+						queryFormat.format(d), 
+						"and", 
+						"query",
+						"contains",
+						term
+					);
+			
+			System.out.println(gson.toJson(model));
+			
+			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
+			Reader reader;
+			try {
+				reader = new InputStreamReader(in, "UTF-8");
+				GSCJSONResponseModel result = gson.fromJson(reader, GSCJSONResponseModel.class);
+				
+				if(result.getRows()!=null) {
+				GSCJSONResponseModel.Row row = result.getRows().get(0);
+				
+				String ctrPercentage = String.format("%f%%", row.getCtr()*100);
+				
+				String positionRounded = String.format("%f", row.getPosition());
+				
+				out.add(row.getClicks().toString());
+				out.add(ctrPercentage);
+				out.add(positionRounded);
+				} else {
+					//this should never be executed, valid date checks happen in getAll()
+					out.add("NDF");
+					out.add("NDF");
+					out.add("NDF");
+				}
+				
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	private abstract class GSCPlainQuery extends GSCQuery {
+
+		public String dimension,operator,expression;
+		
+		public GSCPlainQuery(String name,String dimension, String operator,
+				String expression) {
+			super(name);
+			
+			this.dimension = dimension;
+			this.operator = operator;
+			this.expression = expression;
+		}
+		
+		@Override
+		public void get(Date d) {
+			out.add("");
+			
+			model = GSCJSONModel.build(
+						queryFormat.format(getWeekDayBefore(d)),
+						queryFormat.format(d), 
+						"and", 
+						dimension,
+						operator,
+						expression
+					);
+			
+			System.out.println(gson.toJson(model));
+			
+			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
+			Reader reader;
+			try {
+				reader = new InputStreamReader(in, "UTF-8");
+				GSCJSONResponseModel result = gson.fromJson(reader, GSCJSONResponseModel.class);
+				
+				if(result.getRows()!=null) {
+				GSCJSONResponseModel.Row row = result.getRows().get(0);
+				
+				String ctrPercentage = String.format("%f%%", row.getCtr()*100);
+				
+				out.add(row.getClicks().toString());
+				out.add(row.getImpressions().toString());
+				out.add(ctrPercentage);
+				} else {
+					//this should never be executed, valid date checks happen in getAll()
+					out.add("NDF");
+					out.add("NDF");
+					out.add("NDF");
+				}
+				
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+ 	
 	private class AllQueries extends GSCQuery {
 		public AllQueries() {
 			super("All Queries");
@@ -163,49 +352,15 @@ public class GoogleSearchConsole extends GoogleGet {
 		}
 		
 	}
-	private class DesktopQuery extends GSCQuery {
+	private class DesktopQuery extends GSCPlainQuery {
 		public DesktopQuery() {
-			super("Desktop Device");
+			super("Desktop Device","device","equals","DESKTOP");
 		}
-		@Override
-		public void get(Date d) {
-			out.add("");
-			
-			model = GSCJSONModel.build(
-						queryFormat.format(getWeekDayBefore(d)),
-						queryFormat.format(d), 
-						"and", 
-						"device", 
-						"DESKTOP"
-					);
-			
-			System.out.println(gson.toJson(model));
-			
-			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
-			Reader reader;
-			try {
-				reader = new InputStreamReader(in, "UTF-8");
-				GSCJSONResponseModel result = gson.fromJson(reader, GSCJSONResponseModel.class);
-				
-				if(result.getRows()!=null) {
-				GSCJSONResponseModel.Row row = result.getRows().get(0);
-				
-				String ctrPercentage = String.format("%f%%", row.getCtr()*100);
-				
-				out.add(row.getClicks().toString());
-				out.add(row.getImpressions().toString());
-				out.add(ctrPercentage);
-				} else {
-					//this should never be executed, valid date checks happen in getAll()
-					out.add("NDF");
-					out.add("NDF");
-					out.add("NDF");
-				}
-				
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
+	}
+	
+	private class ContainsQuery extends GSCPlainQuery {
+		public ContainsQuery(String term) {
+			super("containing \"%wcontainsTerm%\"","query","contains",term);
 		}
-		
 	}
 }
