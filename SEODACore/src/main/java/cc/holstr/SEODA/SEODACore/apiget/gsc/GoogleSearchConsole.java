@@ -18,6 +18,7 @@ import cc.holstr.SEODA.SEODACore.apiget.gsc.model.GSCJSONResponseModel;
 import cc.holstr.SEODA.SEODACore.apiget.model.QueryMap;
 import cc.holstr.SEODA.SEODACore.auth.GoogleOAuth;
 import cc.holstr.SEODA.SEODACore.http.HandledGoogleHttpHelper;
+import cc.holstr.SEODA.SEODACore.http.RetryingGoogleHttpHelper;
 import cc.holstr.SEODA.SEODACore.output.model.Position;
 import cc.holstr.SEODA.SEODACore.properties.Properties;
 import cc.holstr.util.ZMisc;
@@ -43,7 +44,7 @@ public class GoogleSearchConsole extends GoogleGet {
 	  } 
 
 	  @Override
-	  	protected HandledGoogleHttpHelper initHelper() {
+	  	protected RetryingGoogleHttpHelper initHelper() {
 		  if(GoogleOAuth.isSimple()) {
 				if(GoogleOAuth.isSimpleAuthorized()) {
 					gscAuth = GoogleOAuth.getSimpleAuth();
@@ -56,7 +57,7 @@ public class GoogleSearchConsole extends GoogleGet {
 //				    GoogleOAuth.getApplicationName()).build();
 				}
 			}
-		  return new HandledGoogleHttpHelper(gscAuth.getCredential());
+		  return new RetryingGoogleHttpHelper(gscAuth.getCredential(),"403");
 	  }
 	  
 	  @Override
@@ -70,7 +71,6 @@ public class GoogleSearchConsole extends GoogleGet {
 
 	@Override
 	public String[][] getAll(String[][] start, TreeMap<Date, Position> map) {
-		int usageLimitCount = 0; 
 		int position = 0; 
 		Date now = new Date();
 		List<Date> dts = new ArrayList<Date>(map.keySet());
@@ -78,25 +78,12 @@ public class GoogleSearchConsole extends GoogleGet {
 			Date d = dts.get(position);
 			long diff = TimeUnit.MILLISECONDS.toSeconds((now.getTime()-d.getTime()));
 			//if less than 90 days ago
-			System.out.println("diff is " + diff);
 			if(diff < 7776000 && d.before(now)) {
-				//if fired 5 times in succession
-				if(usageLimitCount>=5) {
-					try {
-						System.out.println("Sleeping... (too many requests)");
-						Thread.sleep(1000);
-						usageLimitCount=0;
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				} else {
-					String[] temp = get(d);
-					if(temp!=null) {
-					start = ZMisc.mergeColumn(start, temp, 1, map.get(d).getColumn());
-					}
-					position++; 
-					usageLimitCount++;
-				}	
+				String[] temp = get(d);
+				if(temp!=null) {
+				start = ZMisc.mergeColumn(start, temp, 1, map.get(d).getColumn());
+				}
+				position++; 
 			} else {
 				position++;
 			}
@@ -107,20 +94,9 @@ public class GoogleSearchConsole extends GoogleGet {
 	@Override
 	public String[] get(Date d) {
 		out = new ArrayList<String>();
-		String name = "All Queries";
 		for(String item : template) {
 			GSCQuery query = (GSCQuery)validQueries.get(item);
 			if(query!=null) {
-				System.out.println("last QUERY NAME : "+name);
-				System.out.println("new QUERY NAME : "+query.getName());
-				if(!name.equals(query.getName())) {
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					name = query.getName();
-				}
 				query.get(d);
 			}
 		}
@@ -160,7 +136,7 @@ public class GoogleSearchConsole extends GoogleGet {
 			
 			System.out.println(gson.toJson(model));
 			
-			InputStream in = httpHelper.post(url, gson.toJson(model));
+			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
 			Reader reader;
 			try {
 				reader = new InputStreamReader(in, "UTF-8");
@@ -205,7 +181,7 @@ public class GoogleSearchConsole extends GoogleGet {
 			
 			System.out.println(gson.toJson(model));
 			
-			InputStream in = httpHelper.post(url, gson.toJson(model));
+			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
 			Reader reader;
 			try {
 				reader = new InputStreamReader(in, "UTF-8");
