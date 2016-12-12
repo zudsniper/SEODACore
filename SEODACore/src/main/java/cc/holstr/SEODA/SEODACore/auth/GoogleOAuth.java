@@ -22,6 +22,8 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.webmasters.WebmastersScopes;
 
+import cc.holstr.SEODA.SEODACore.properties.Unpacker;
+
 public class GoogleOAuth {
 	
 	/*	GoogleOAuth.java
@@ -90,7 +92,7 @@ public class GoogleOAuth {
 		  // load client secrets  
 	    clientSecrets = GoogleClientSecrets.load(
 	        JSON_FACTORY, new InputStreamReader(
-	            GoogleOAuth.class.getResourceAsStream("client_secrets.json")));
+	        		this.getClass().getClassLoader().getResourceAsStream("client_secrets.json")));
 	    
 	    
 	    // set up authorization code flow
