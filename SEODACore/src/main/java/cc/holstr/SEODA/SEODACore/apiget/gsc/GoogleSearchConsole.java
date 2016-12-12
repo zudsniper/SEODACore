@@ -70,59 +70,47 @@ public class GoogleSearchConsole extends GoogleGet {
 
 	@Override
 	public String[][] getAll(String[][] start, TreeMap<Date, Position> map) {
-		int usageLimitCount = 0; 
-		int position = 0; 
 		Date now = new Date();
-		List<Date> dts = new ArrayList<Date>(map.keySet());
-		while(position < dts.size()) {
-			Date d = dts.get(position);
+		for(Date d : map.keySet()) {
 			long diff = TimeUnit.MILLISECONDS.toSeconds((now.getTime()-d.getTime()));
 			//if less than 90 days ago
 			System.out.println("diff is " + diff);
 			if(diff < 7776000 && d.before(now)) {
-				//if fired 5 times in succession
-				if(usageLimitCount>=5) {
-					try {
-						System.out.println("Sleeping... (too many requests)");
-						Thread.sleep(1000);
-						usageLimitCount=0;
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				} else {
-					String[] temp = get(d);
-					if(temp!=null) {
-					start = ZMisc.mergeColumn(start, temp, 1, map.get(d).getColumn());
-					}
-					position++; 
-					usageLimitCount++;
-				}	
-			} else {
-				position++;
-			}
+				String[] temp = get(d);
+				if(temp!=null) {
+				start = ZMisc.mergeColumn(start, temp, 1, map.get(d).getColumn());
+				}
+			} 
 		}
 		return start;
 	}
 	
 	@Override
 	public String[] get(Date d) {
+		int usageLimitCount = 0;
+		int pos = 0;
 		out = new ArrayList<String>();
-		String name = "All Queries";
-		for(String item : template) {
-			GSCQuery query = (GSCQuery)validQueries.get(item);
+		while(pos<template.length) {
+			GSCQuery query = (GSCQuery)validQueries.get(template[pos]);
 			if(query!=null) {
-				System.out.println("last QUERY NAME : "+name);
-				System.out.println("new QUERY NAME : "+query.getName());
-				if(!name.equals(query.getName())) {
+				if(usageLimitCount>=5) {
 					try {
 						Thread.sleep(1000);
+						usageLimitCount = 0;
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					name = query.getName();
+				} else {
+					query.get(d);
+					usageLimitCount++;
+					pos++;
 				}
-				query.get(d);
 			}
+		}
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 		return out.toArray(new String[1]);
 	}
