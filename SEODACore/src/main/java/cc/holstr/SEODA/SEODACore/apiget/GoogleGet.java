@@ -11,7 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import cc.holstr.SEODA.SEODACore.apiget.model.QueryMap;
-import cc.holstr.SEODA.SEODACore.http.HandledGoogleHttpHelper;
+import cc.holstr.SEODA.SEODACore.http.GoogleHttpHelper;
 import cc.holstr.SEODA.SEODACore.output.TemplateCSVReader;
 import cc.holstr.SEODA.SEODACore.output.model.Position;
 
@@ -27,7 +27,7 @@ public abstract class GoogleGet {
 	protected String[] template;
 	protected QueryMap<? extends APIQuery> validQueries;
 	
-	protected HandledGoogleHttpHelper httpHelper;
+	protected GoogleHttpHelper httpHelper;
 	
 	public GoogleGet(String templateName) {
 		this.templateName = templateName;
@@ -66,7 +66,7 @@ public abstract class GoogleGet {
 	
 	protected abstract QueryMap<? extends APIQuery> getValidQueries();
 	
-	protected abstract HandledGoogleHttpHelper initHelper();
+	protected abstract GoogleHttpHelper initHelper();
 	
 	protected abstract String buildUrl();
 	
