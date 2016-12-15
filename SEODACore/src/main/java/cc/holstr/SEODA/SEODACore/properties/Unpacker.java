@@ -10,12 +10,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.BasicConfigurator;
 
 import cc.holstr.SEODA.SEODACore.commandLine.Ansi;
 import cc.holstr.SEODA.SEODACore.log.SEODALogger;
 
 public class Unpacker {
+	
+	private static final long logLifetimeMS = 864000000;
+	private static final boolean logClear = true;
 	
 	private static Path storePath;
 	private static File storeFile;
@@ -30,8 +32,21 @@ public class Unpacker {
 	
 	public static boolean propsReset;
 	
+	private static int changes;
+	
 	public static void unpack() {
-		int changes = 0;
+		changes = 0;
+		unpackLogging();
+		loadVersionString();
+		boolean success = unpackStoreDirectory() 
+		&& unpackConfig()
+		&& unpackLayouts();
+		if(success) {
+			System.out.println(Ansi.GREEN+"UNPACKER : Unpacked, " + changes + " changes made."+Ansi.SANE);
+		}
+	}
+	
+	private static boolean unpackLogging() {
 		boolean success = true;
 		loggingPath = Paths.get(System.getProperty("user.home"),".store","seoda","logging");
 		if(!loggingPath.toFile().exists()) {
@@ -45,6 +60,18 @@ public class Unpacker {
 				System.out.println("ERROR : Failed to create logging directory.");
 				success = false;
 			}
+		} else {
+			if(logClear) {
+				for(File file : loggingPath.toFile().listFiles()) {
+					if(file.getName().contains("log")) {
+						long nowMS = System.currentTimeMillis();
+						long ms = Long.parseLong(file.getName().substring(0,file.getName().lastIndexOf(".")));
+						if(ms+logLifetimeMS<=nowMS) {
+							file.delete();
+						}
+					}
+				}
+			}
 		}
 		loggingFile = Paths.get(loggingPath.toString(),System.currentTimeMillis()+".log").toFile();
 		if(!loggingFile.exists()) {
@@ -56,8 +83,11 @@ public class Unpacker {
 			}
 		}
 		SEODALogger.configure(loggingFile.getAbsolutePath());
-		
-		loadVersionString();
+		return success;
+	}
+	
+	private static boolean unpackStoreDirectory() {
+		boolean success = true;
 		storePath  = Paths.get(System.getProperty("user.home"),".store","seoda","data");
 		storeFile = storePath.toFile();
 		if(!storeFile.exists()) {
@@ -72,7 +102,11 @@ public class Unpacker {
 				success = false;
 			}
 		}
-		
+		return success;
+	}
+	
+	private static boolean unpackConfig() {
+		boolean success = true;
 		File config = Paths.get(storePath.toString(),"config.properties").toFile();
 		if(!config.exists()) {
 			try {
@@ -86,6 +120,11 @@ public class Unpacker {
 				success = false;
 			}
 		}
+		return success;
+	}
+	
+	private static boolean unpackLayouts() {
+		boolean success = true;
 		File layout = Paths.get(storePath.toString(),"layouts").toFile();
 		if(!layout.exists()) {
 			try {
@@ -100,9 +139,7 @@ public class Unpacker {
 				success = false;
 			}
 		}
-		if(success) {
-			System.out.println(Ansi.GREEN+"UNPACKER : Unpacked, " + changes + " changes made."+Ansi.SANE);
-		}
+		return success;
 	}
 	
 	private static void loadLayouts(File target) throws IOException{
