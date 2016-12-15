@@ -1,4 +1,4 @@
-package cc.holstr.SEODA.SEODACore.apiget.gsc.model;
+package cc.holstr.SEODA.SEODACore.apiget.gsc.model.json;
 
 import java.util.ArrayList;
 import java.util.List;

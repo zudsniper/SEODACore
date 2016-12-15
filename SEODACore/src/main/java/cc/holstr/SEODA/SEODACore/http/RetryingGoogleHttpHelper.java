@@ -7,9 +7,12 @@ import com.google.api.client.auth.oauth2.Credential;
 public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 
 	private String retryOn;
+	private long retryMS;
 	
-	public RetryingGoogleHttpHelper(Credential credential, String retryOn) {
+	
+	public RetryingGoogleHttpHelper(Credential credential, long retryMS, String retryOn) {
 		super(credential);
+		setWait(retryMS);
 		setRetryOn(retryOn);
 	}
 	
@@ -21,10 +24,12 @@ public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 					if(retryOn!=null) {
 						if(e.getMessage().contains(retryOn)) {
 							System.out.println("EXCEPTION code "+retryOn+" Retrying...");
+							retryWait();
 							return post(url, jsonString);
 						}
 					} else {
 					System.out.println("EXCEPTION Retrying...");
+					retryWait();
 					return post(url, jsonString);
 					}
 				}
@@ -39,10 +44,12 @@ public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 					if(retryOn!=null) {
 						if(e.getMessage().contains(retryOn)) {
 							System.out.println("EXCEPTION code "+retryOn+" Retrying...");
+							retryWait();
 							return get(url);
 						}
 					} else {
 					System.out.println("EXCEPTION Retrying...");
+					retryWait();
 					return get(url);
 					}
 				}
@@ -57,22 +64,42 @@ public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 				if(retryOn!=null) {
 					if(e.getMessage().contains(retryOn)) {
 						System.out.println("EXCEPTION code "+retryOn+" Retrying...");
+						retryWait();
 						return put(url, jsonString);
 					}
 				} else {
 				System.out.println("EXCEPTION Retrying...");
+				retryWait();
 				return put(url, jsonString);
 				}
 			}
 			return response;
 	}
-
+	
+	private void retryWait() {
+		if(getWait()>=0) {
+			try {
+				Thread.sleep(getWait());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	public String getRetryOn() {
 		return retryOn;
 	}
 
 	public void setRetryOn(String retryOn) {
 		this.retryOn = retryOn;
+	}
+
+	public long getWait() {
+		return retryMS;
+	}
+
+	public void setWait(long retryMS) {
+		this.retryMS = retryMS;
 	}	
 	
 }

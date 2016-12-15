@@ -9,6 +9,7 @@ import java.net.URLConnection;
 import com.google.api.client.auth.oauth2.Credential;
 
 import cc.holstr.SEODA.SEODACore.auth.GoogleOAuth;
+import cc.holstr.SEODA.SEODACore.log.SEODALogger;
 
 public class GoogleHttpHelper {
 	
@@ -32,12 +33,12 @@ public class GoogleHttpHelper {
 	
 	public static InputStream get(String url, Credential cred) throws Exception{
 		//http GET 
-		System.out.println("GOOGLE HTTP HELPER : GET to " + url);
+		SEODALogger.getLogger().info("GOOGLE HTTP HELPER : GET to " + url);
 		boolean failed = false;
 		  String charset = "UTF-8"; 
 		//if access token is expired, refresh and try again.
 		  if (cred.getAccessToken() == null || cred.getExpiresInSeconds() != null && cred.getExpiresInSeconds() <= 60) {
-			  System.out.println("GOOGLE HTTP HELPER : Access Token expired, refreshing...");
+			  SEODALogger.getLogger().info("GOOGLE HTTP HELPER : Access Token expired, refreshing...");
 		      //cred.refreshToken();
 			  GoogleOAuth.getSimpleAuth().getCredential().refreshToken();
 		      get(url, cred);
@@ -53,12 +54,12 @@ public class GoogleHttpHelper {
 	
 	public static InputStream post(String url, String jsonString, Credential cred) throws Exception{
 		//http POST
-		System.out.println("GOOGLE HTTP HELPER : POST to " + url);
+		SEODALogger.getLogger().info("GOOGLE HTTP HELPER : POST to " + url);
 		  boolean failed = false;
 		  String charset = "UTF-8"; 
 		//if access token is expired, refresh and try again.
 		  if (cred.getAccessToken() == null || cred.getExpiresInSeconds() != null && cred.getExpiresInSeconds() <= 60) {
-			  System.out.println("GOOGLE HTTP HELPER : Access Token expired, refreshing...");
+			  SEODALogger.getLogger().info("GOOGLE HTTP HELPER : Access Token expired, refreshing...");
 		      cred.refreshToken();
 		      post(url, jsonString, cred);
 		  }
@@ -82,12 +83,12 @@ public class GoogleHttpHelper {
 	
 	public static InputStream put(String url, String jsonString, Credential cred) throws Exception{
 		//http PUT
-		System.out.println("GOOGLE HTTP HELPER : PUT to " + url);
+		SEODALogger.getLogger().info("GOOGLE HTTP HELPER : PUT to " + url);
 		  boolean failed = false;
 		  String charset = "UTF-8"; 
 		  //if access token is expired, refresh and try again.
 		  if (cred.getAccessToken() == null || cred.getExpiresInSeconds() != null && cred.getExpiresInSeconds() <= 60) {
-			  System.out.println("GOOGLE HTTP HELPER : Access Token expired, refreshing...");
+			  SEODALogger.getLogger().info("GOOGLE HTTP HELPER : Access Token expired, refreshing...");
 		      cred.refreshToken();
 		      put(url, jsonString, cred);
 		  }

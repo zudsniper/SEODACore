@@ -11,12 +11,15 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.api.services.webmasters.Webmasters;
 
 import cc.holstr.SEODA.SEODACore.apiget.GoogleGet;
-import cc.holstr.SEODA.SEODACore.apiget.gsc.model.GSCJSONModel;
-import cc.holstr.SEODA.SEODACore.apiget.gsc.model.GSCJSONResponseModel;
 import cc.holstr.SEODA.SEODACore.apiget.gsc.model.RankModel;
+import cc.holstr.SEODA.SEODACore.apiget.gsc.model.json.GSCJSONModel;
+import cc.holstr.SEODA.SEODACore.apiget.gsc.model.json.GSCJSONResponseModel;
 import cc.holstr.SEODA.SEODACore.apiget.model.QueryMap;
 import cc.holstr.SEODA.SEODACore.auth.GoogleOAuth;
 import cc.holstr.SEODA.SEODACore.http.RetryingGoogleHttpHelper;
@@ -28,6 +31,8 @@ import cc.holstr.util.ZUrl;
 public class GoogleSearchConsole extends GoogleGet {
 	protected final static String urlStubFront = "https://www.googleapis.com/webmasters/v3/sites/";
 	protected final static String urlStubBack = "/searchAnalytics/query";
+	
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 	
 	private List<String> out; 
 	
@@ -58,7 +63,7 @@ public class GoogleSearchConsole extends GoogleGet {
 //				    GoogleOAuth.getApplicationName()).build();
 				}
 			}
-		  return new RetryingGoogleHttpHelper(gscAuth.getCredential(),"403");
+		  return new RetryingGoogleHttpHelper(gscAuth.getCredential(),200,"403");
 	  }
 	  
 	  @Override
@@ -102,8 +107,7 @@ public class GoogleSearchConsole extends GoogleGet {
 	public String[] get(Date d) {
 		out = new ArrayList<String>();
 		for(String item : template) {
-			System.out.println(item);
-			System.out.println("validQueries contains item : " + validQueries.containsKey(item));
+			logger.info(item);
 			GSCQuery query = (GSCQuery)validQueries.get(item);
 			if(query!=null) {
 				query.get(d);
