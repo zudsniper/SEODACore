@@ -1,11 +1,13 @@
-package cc.holstr.SEODA.SEODACore.apiget.gsc.model;
+package cc.holstr.SEODA.SEODACore.apiget.gsc.model.json;
 
 import java.util.List;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class GSCJSONResponseModel {
+import cc.holstr.SEODA.SEODACore.apiget.model.JSONModel;
+
+public class GSCJSONResponseModel extends JSONModel{
 
 	@SerializedName("rows")
 	@Expose

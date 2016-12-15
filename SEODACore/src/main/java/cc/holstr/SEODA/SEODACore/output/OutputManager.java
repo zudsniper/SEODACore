@@ -15,6 +15,7 @@ import cc.holstr.SEODA.SEODACore.apiget.analytics.GoogleAnalytics;
 import cc.holstr.SEODA.SEODACore.apiget.gmb.GoogleMyBusiness;
 import cc.holstr.SEODA.SEODACore.apiget.gsc.GoogleSearchConsole;
 import cc.holstr.SEODA.SEODACore.commandLine.Ansi;
+import cc.holstr.SEODA.SEODACore.log.SEODALogger;
 import cc.holstr.SEODA.SEODACore.output.model.OutputSectionExecutor;
 import cc.holstr.SEODA.SEODACore.output.model.OutputSheet;
 import cc.holstr.SEODA.SEODACore.output.model.TemplateSheet;
@@ -77,7 +78,6 @@ public class OutputManager {
 		fillSheetHashMap();
 		boolean b = createRequiredSheets();
 		loadTemplates();
-		//DEPRECATED: loadSheetContent();
 		if(setToDefaultTemplatesIfNecessary()) {
 			loadSheetContent();
 		}
@@ -97,7 +97,7 @@ public class OutputManager {
 			sheet.setContents(writer.loadContentFromSheet(sheet));
 			sheets.put(title, sheet);
 		}
-		System.out.println("OUTPUT MANAGER : Sheets cache hashmap loaded.");
+		SEODALogger.getLogger().info("OUTPUT MANAGER : Sheets cache hashmap loaded.");
 	}
 	
 	public void loadSheetContent() {
@@ -113,12 +113,12 @@ public class OutputManager {
 			TemplateSheet temp; 
 			temp = new TemplateSheet(sheet);
 			if(ApplicationProperties.verbose) {
-				System.out.println(temp.getTitle()+" template loaded.");
+				SEODALogger.getLogger().info(temp.getTitle()+" template loaded.");
 			}
 			requiredSheetLayouts.put(sheet, temp);
 			}
 		if(success) 
-			System.out.println("OUTPUT MANAGER : Loaded all sheet layout templates from store directory.");
+			SEODALogger.getLogger().info("OUTPUT MANAGER : Loaded all sheet layout templates from store directory.");
 		}
 	
 	public void loadDates() {
@@ -136,15 +136,12 @@ public class OutputManager {
 				if(!comply.isSheetDateLoaded(sheet)) {
 					sheet.appendToContents(dates.getDates(), "ROWS", 1, 0);
 					if(ApplicationProperties.verbose) {
-						System.out.println("# OF ROWS: " + sheet.getContents().length);
-						System.out.println("ROW 0 LENGTH: " + sheet.getContents()[0].length);
-						System.out.println("rows: " + sheet.getRow());
-						System.out.println("cols: " + sheet.getCol());
+						SEODALogger.getLogger().info("# OF ROWS: " + sheet.getContents().length);
+						SEODALogger.getLogger().info("ROW 0 LENGTH: " + sheet.getContents()[0].length);
+						SEODALogger.getLogger().info("rows: " + sheet.getRow());
+						SEODALogger.getLogger().info("cols: " + sheet.getCol());
 						}
 					sheet.normalizeContents();
-					if(ApplicationProperties.verbose) {
-					ZMisc.printMatrix(sheet.getContents());
-					}
 					sheet = writer.writeToSheet(sheet);
 				}
 			}
@@ -163,10 +160,10 @@ public class OutputManager {
 			}
 		}
 		if(created==0) {
-			System.out.println("OUTPUT MANAGER : All required sheets present.");
+			SEODALogger.getLogger().info("OUTPUT MANAGER : All required sheets present.");
 			changed = true;
 		} else {
-			System.out.println("OUTPUT MANAGER : " +created + " Required sheets created.");
+			SEODALogger.getLogger().info("OUTPUT MANAGER : " +created + " Required sheets created.");
 		}
 		return changed;
 		
@@ -328,14 +325,13 @@ public class OutputManager {
 			if(sheetData==null) {
 				return false;
 			}
-			if(ApplicationProperties.verbose) {
-				System.out.println("\n    SHEET " + sheet.getTitle());
-				System.out.println(" --Actual Load: ");
-				ZMisc.printMatrix(sheetData);
-				System.out.println("\n --Template: ");
-				ZMisc.printMatrix(template);
-				System.out.println();
-			}
+//			if(ApplicationProperties.verbose) {
+//				SEODALogger.getLogger().info("\n    SHEET " + sheet.getTitle());
+//				SEODALogger.getLogger().info(" --Actual Load: ");
+//				SEODALogger.getLogger().info(ZMisc.printMatrix(sheetData));
+//				SEODALogger.getLogger().info("\n --Template: ");
+//				SEODALogger.getLogger().info(ZMisc.printMatrix(template));
+//			}
 			
 			if(ZMisc.isEmpty(sheetData)) {
 				return false;
@@ -379,9 +375,9 @@ public class OutputManager {
 			}
 			
 			if(compliant) {
-				System.out.println("OUTPUT MANAGER : " + sheet.getTitle() + " is compliant to layout template.");
+				SEODALogger.getLogger().info("OUTPUT MANAGER : " + sheet.getTitle() + " is compliant to layout template.");
 			} else {
-				System.out.println("OUTPUT MANAGER : " + sheet.getTitle() + " is NOT compliant to layout template.");
+				SEODALogger.getLogger().info("OUTPUT MANAGER : " + sheet.getTitle() + " is NOT compliant to layout template.");
 			}
 			return compliant;
 			
@@ -395,29 +391,27 @@ public class OutputManager {
 				return false;
 			}
 			if(ApplicationProperties.verbose) {
-				System.out.println("\n    SHEET " + sheet.getTitle());
-				System.out.println(" --Actual Load: ");
-				ZMisc.printMatrix(sheetData);
+				SEODALogger.getLogger().info("\n    SHEET " + sheet.getTitle());
 			}
 			if(ZMisc.isEmpty(sheetData)) {
 				return false;
 			}
 			
 			if(sheetData[0].length-1<dates.getDates().length) {
-				System.out.println("LENGTHS NOT COMPATIBLE");
+				SEODALogger.getLogger().info("LENGTHS NOT COMPATIBLE");
 				return false;
 			}
 			for(int i = 1; i<sheetData[0].length;i++) {
 				if(sheetData[0][i]!=dates.getDates()[pos]) {
-					System.out.println("DATES NOT CORRECT");
+					//SEODALogger.getLogger().debug("DATES NOT CORRECT");
 					compliant = false;
 				}
 				pos++;
 			}
 			if(compliant) {
-				System.out.println("OUTPUT MANAGER : " + sheet.getTitle() + " is compliant to correct dates.");
+				SEODALogger.getLogger().info("OUTPUT MANAGER : " + sheet.getTitle() + " is compliant to correct dates.");
 			} else {
-				System.out.println("OUTPUT MANAGER : " + sheet.getTitle() + " is NOT compliant to correct dates.");
+				SEODALogger.getLogger().info("OUTPUT MANAGER : " + sheet.getTitle() + " is NOT compliant to correct dates.");
 			}
 			return compliant; 
 		}

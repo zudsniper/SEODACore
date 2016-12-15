@@ -10,8 +10,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.BasicConfigurator;
 
 import cc.holstr.SEODA.SEODACore.commandLine.Ansi;
+import cc.holstr.SEODA.SEODACore.log.SEODALogger;
 
 public class Unpacker {
 	
@@ -30,10 +32,33 @@ public class Unpacker {
 	
 	public static void unpack() {
 		int changes = 0;
-		boolean success = true; 
+		boolean success = true;
+		loggingPath = Paths.get(System.getProperty("user.home"),".store","seoda","logging");
+		if(!loggingPath.toFile().exists()) {
+			System.out.println("UNPACKER : Creating logging directory...");
+			try {
+				Files.createDirectories(loggingPath);
+				System.out.println("Success.");
+				changes++;
+			} catch (IOException e) {
+				SEODALogger.getLogger().error("Failed to create logging directory.");
+				System.out.println("ERROR : Failed to create logging directory.");
+				success = false;
+			}
+		}
+		loggingFile = Paths.get(loggingPath.toString(),System.currentTimeMillis()+".log").toFile();
+		if(!loggingFile.exists()) {
+			try {
+				loggingFile.createNewFile();
+			} catch (IOException e) {
+				SEODALogger.getLogger().error("Couldn't create logging file.");
+				System.out.println("UNPACKER : Couldn't create logging file.");
+			}
+		}
+		SEODALogger.configure(loggingFile.getAbsolutePath());
+		
 		loadVersionString();
 		storePath  = Paths.get(System.getProperty("user.home"),".store","seoda","data");
-		loggingPath = Paths.get(System.getProperty("user.home"),".store","seoda","logging");
 		storeFile = storePath.toFile();
 		if(!storeFile.exists()) {
 			System.out.println("UNPACKER : Creating store directory...");
@@ -42,29 +67,12 @@ public class Unpacker {
 				System.out.println("Success.");
 				changes++;
 			} catch (IOException e) {
+				SEODALogger.getLogger().error("Failed to create store directory.");
 				System.out.println("ERROR : Failed to create store directory.");
 				success = false;
 			}
 		}
-		if(!loggingPath.toFile().exists()) {
-			System.out.println("UNPACKER : Creating logging directory...");
-			try {
-				Files.createDirectories(loggingPath);
-				System.out.println("Success.");
-				changes++;
-			} catch (IOException e) {
-				System.out.println("ERROR : Failed to create logging directory.");
-				success = false;
-			}
-		}
-		loggingFile = Paths.get(loggingPath.toString(),"log"+System.currentTimeMillis()+".txt").toFile();
-		if(!loggingFile.exists()) {
-			try {
-				loggingFile.createNewFile();
-			} catch (IOException e) {
-				System.out.println("UNPACKER : Couldn't create logging file.");
-			}
-		}
+		
 		File config = Paths.get(storePath.toString(),"config.properties").toFile();
 		if(!config.exists()) {
 			try {
@@ -72,6 +80,7 @@ public class Unpacker {
 				System.out.println("UNPACKER : Created default config document.");
 				changes++;
 			} catch (IOException e) {
+				SEODALogger.getLogger().error("Couldn't make configuration directory in store dir.");
 				System.out.println("UNPACKER : Couldn't make configuration directory in store dir.");
 				e.printStackTrace();
 				success = false;
@@ -84,7 +93,9 @@ public class Unpacker {
 				System.out.println("UNPACKER : created layout templates.");
 				changes++; 
 			} catch (IOException e) {
+				
 				System.out.println("UNPACKER : Couldn't make layouts directory in store dir.");
+				SEODALogger.getLogger().error("Couldn't make layouts directory in store dir.");
 				e.printStackTrace();
 				success = false;
 			}
@@ -108,6 +119,7 @@ public class Unpacker {
 				StringWriter sw = new StringWriter();
 				IOUtils.copy(str, sw, "UTF-8");
 				versionTxt = sw.toString();
+				SEODALogger.getLogger().debug("Loaded Version txt");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -126,6 +138,7 @@ public class Unpacker {
 			Properties.builder = null;
 			Properties.load();
 		} catch (IOException e) {
+			SEODALogger.getLogger().error("Error during config reset.");
 			System.out.println("UNPACKER : Error during config reset.");
 		}
 	}
@@ -134,11 +147,14 @@ public class Unpacker {
 		File layout = Paths.get(storePath.toString(),"layouts").toFile();
 		if(layout.delete()) {
 			System.out.println("UNPACKER : Old layout templates deleted.");
+			SEODALogger.getLogger().error("Old layout templates deleted.");
 		}
 		try {
 			loadLayouts(layout);
 			System.out.println("UNPACKER : layout templates reset.");
+			SEODALogger.getLogger().debug("UNPACKER : Layout templates reset.");
 		} catch (IOException e) {
+			SEODALogger.getLogger().error("Couldn't make layouts directory in store dir.");
 			System.out.println("UNPACKER : Couldn't make layouts directory in store dir.");
 			e.printStackTrace();
 		}

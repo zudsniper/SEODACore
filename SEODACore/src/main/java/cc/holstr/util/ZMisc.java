@@ -74,12 +74,12 @@ public class ZMisc {
 			for(T col : row) {
 				if(col!=null) {
 					if(col.equals("")) {
-						System.out.print("blank, ");
+						System.out.println("blank, ");
 					} else {
-					System.out.print(col.toString() + ", ");
+					System.out.println(col.toString() + ", ");
 					}
 				} else {
-					System.out.print("null, ");
+					System.out.println("null, ");
 				}
 				
 			}
