@@ -105,16 +105,17 @@ public class OutputSheet implements ZCheckable<OutputSheet>{
 	
 	public boolean appendToContents(String[] array,String appType, int offset, int colOrRow) {
 		boolean success = false;
-		if(appType.equals("ROWS")) {
+		if(appType.equals("row")) {
 			setContents(ZMisc.mergeRow(getContents(), array, offset, colOrRow));
 			setDimensions(getContents().length,ZMisc.getLongestRow(getContents()));
 			success = true;
-		} else if(appType.equals("COLS")) {
-			
+		} else if(appType.equals("col")) {
+			setContents(ZMisc.mergeColumn(getContents(), array, offset, colOrRow));
+			setDimensions(getContents().length,ZMisc.getLongestRow(getContents()));
+			success = true;
 		} else {
 			return false;
 		}
-		//ZMisc.printMatrix(getContents());
 		return success;
 	}
 	
@@ -128,10 +129,6 @@ public class OutputSheet implements ZCheckable<OutputSheet>{
 				}
 			}
 		}
-		
-//		if(Configure.verbose) {
-//			ZMisc.printMatrix(getContents());
-//		}
 		return success;
 	}
 

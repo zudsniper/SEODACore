@@ -32,8 +32,6 @@ public class GoogleSearchConsole extends GoogleGet {
 	protected final static String urlStubFront = "https://www.googleapis.com/webmasters/v3/sites/";
 	protected final static String urlStubBack = "/searchAnalytics/query";
 	
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-	
 	private List<String> out; 
 	
 	public static GoogleOAuth gscAuth; 
@@ -107,7 +105,6 @@ public class GoogleSearchConsole extends GoogleGet {
 	public String[] get(Date d) {
 		out = new ArrayList<String>();
 		for(String item : template) {
-			logger.info(item);
 			GSCQuery query = (GSCQuery)validQueries.get(item);
 			if(query!=null) {
 				query.get(d);
@@ -157,8 +154,6 @@ public class GoogleSearchConsole extends GoogleGet {
 			dimensions.add(dimensionType);
 			model.setDimensions(dimensions);
 			model.setRowLimit(25);
-		
-		System.out.println(gson.toJson(model));
 		
 		InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
 		Reader reader;
@@ -228,8 +223,6 @@ public class GoogleSearchConsole extends GoogleGet {
 						term
 					);
 			
-			System.out.println(gson.toJson(model));
-			
 			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
 			Reader reader;
 			try {
@@ -286,8 +279,6 @@ public class GoogleSearchConsole extends GoogleGet {
 						expression
 					);
 			
-			System.out.println(gson.toJson(model));
-			
 			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
 			Reader reader;
 			try {
@@ -326,8 +317,6 @@ public class GoogleSearchConsole extends GoogleGet {
 			
 			model.setStartDate(queryFormat.format(getWeekDayBefore(d)));
 			model.setEndDate(queryFormat.format(d));
-			
-			System.out.println(gson.toJson(model));
 			
 			InputStream in = ((RetryingGoogleHttpHelper)httpHelper).post(url, gson.toJson(model));
 			Reader reader;

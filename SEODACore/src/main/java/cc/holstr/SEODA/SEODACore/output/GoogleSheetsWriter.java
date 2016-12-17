@@ -210,7 +210,7 @@ public class GoogleSheetsWriter {
 		return sheet;
 	}
 
-	public String[][] loadContentFromSheet(OutputSheet sheet) {
+	public String[][] readFromSheet(OutputSheet sheet) {
 		String range = getRangeFromDimensions(sheet.getRow(), sheet.getCol());
 		String[][] contents = readRange(sheet.getTitle(), range);
 		return contents;

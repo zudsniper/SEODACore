@@ -4,6 +4,8 @@ import java.io.InputStream;
 
 import com.google.api.client.auth.oauth2.Credential;
 
+import cc.holstr.SEODA.SEODACore.log.SEODALogger;
+
 public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 
 	private String retryOn;
@@ -23,12 +25,12 @@ public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 				} catch (Exception e) {
 					if(retryOn!=null) {
 						if(e.getMessage().contains(retryOn)) {
-							System.out.println("EXCEPTION code "+retryOn+" Retrying...");
+							SEODALogger.getLogger().warn("EXCEPTION code "+retryOn+" Retrying...");
 							retryWait();
 							return post(url, jsonString);
 						}
 					} else {
-					System.out.println("EXCEPTION Retrying...");
+					SEODALogger.getLogger().warn("EXCEPTION Retrying...");
 					retryWait();
 					return post(url, jsonString);
 					}
@@ -43,12 +45,12 @@ public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 				} catch (Exception e) {
 					if(retryOn!=null) {
 						if(e.getMessage().contains(retryOn)) {
-							System.out.println("EXCEPTION code "+retryOn+" Retrying...");
+							SEODALogger.getLogger().warn("EXCEPTION code "+retryOn+" Retrying...");
 							retryWait();
 							return get(url);
 						}
 					} else {
-					System.out.println("EXCEPTION Retrying...");
+					SEODALogger.getLogger().warn("EXCEPTION Retrying...");
 					retryWait();
 					return get(url);
 					}
@@ -63,12 +65,12 @@ public class RetryingGoogleHttpHelper extends GoogleHttpHelper {
 			} catch(Exception e) {
 				if(retryOn!=null) {
 					if(e.getMessage().contains(retryOn)) {
-						System.out.println("EXCEPTION code "+retryOn+" Retrying...");
+						SEODALogger.getLogger().warn("EXCEPTION code "+retryOn+" Retrying...");
 						retryWait();
 						return put(url, jsonString);
 					}
 				} else {
-				System.out.println("EXCEPTION Retrying...");
+				SEODALogger.getLogger().warn("EXCEPTION Retrying...");
 				retryWait();
 				return put(url, jsonString);
 				}
