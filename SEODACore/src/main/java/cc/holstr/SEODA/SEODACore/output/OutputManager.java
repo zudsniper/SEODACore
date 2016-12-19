@@ -16,7 +16,7 @@ import cc.holstr.SEODA.SEODACore.apiget.gmb.GoogleMyBusiness;
 import cc.holstr.SEODA.SEODACore.apiget.gsc.GoogleSearchConsole;
 import cc.holstr.SEODA.SEODACore.commandLine.Ansi;
 import cc.holstr.SEODA.SEODACore.log.SEODALogger;
-import cc.holstr.SEODA.SEODACore.output.model.OutputSectionExecutor;
+import cc.holstr.SEODA.SEODACore.output.model.HandledOutputSheet;
 import cc.holstr.SEODA.SEODACore.output.model.OutputSheet;
 import cc.holstr.SEODA.SEODACore.output.model.TemplateSheet;
 import cc.holstr.SEODA.SEODACore.properties.ApplicationProperties;
@@ -30,15 +30,7 @@ public class OutputManager {
 	//required output types
 	private final String[] requiredSheets = {"GSC","GMB","Adwords","Analytics","Sheet1"};
 	private HashMap<String, TemplateSheet> requiredSheetLayouts;
-	
-	//subclass manager objects
-	private GoogleSearchConsoleManager gsc; 
-	private GoogleAnalyticsManager analytics;
-	private GoogleAdwordsManager adwords;
-	private GoogleMyBusinessManager gmb;
-	//subclass manager map
-	public HashMap<String, SubManager> submanagers;
-	
+
 	//internal manager classes
 	private ComplianceManager comply; 
 	private DatesManager dates; 
@@ -46,7 +38,7 @@ public class OutputManager {
 	private GoogleSheetsWriter writer;
 	
 	//loaded sheets hashmap
-	public HashMap<String, OutputSheet> sheets;
+	public HashMap<String, HandledOutputSheet> sheets;
 	
 	//last update
 	private long lastUpdateMillis; 
@@ -61,12 +53,11 @@ public class OutputManager {
 	public void define(int year) {
 		this.year = year;
 		writer = new GoogleSheetsWriter(year+"");
-		sheets = new HashMap<String, OutputSheet>();
+		sheets = new HashMap<String, HandledOutputSheet>();
 		requiredSheetLayouts = new HashMap<String, TemplateSheet>();
 		
 		comply = new ComplianceManager();
 		dates = new DatesManager();
-		submanagers = new HashMap<String, SubManager>();
 		lastUpdateMillis = -1; 
 	}
 	
@@ -79,11 +70,10 @@ public class OutputManager {
 		boolean b = createRequiredSheets();
 		loadTemplates();
 		if(setToDefaultTemplatesIfNecessary()) {
-			loadSheetContent();
+			reloadSheetContent();
 		}
 		//TODO: fix loadDatesIfNecessary(), then use
 		loadDates();
-		initSubManagers();
 		lastUpdateMillis = System.currentTimeMillis();
 		System.out.println(Ansi.BACKGROUND_BLUE+Ansi.WHITE+"OUTPUT MANAGER : Load finished."+Ansi.SANE);
 	
@@ -94,16 +84,16 @@ public class OutputManager {
 		sheets.clear();
 		for(OutputSheet sheet : writer.getUpdatedSheets()) {
 			String title = sheet.getTitle();
-			sheet.setContents(writer.loadContentFromSheet(sheet));
-			sheets.put(title, sheet);
+			sheet.setContents(writer.readFromSheet(sheet));
+			sheets.put(title, new HandledOutputSheet(sheet, getSheetGetter(sheet)));
 		}
 		SEODALogger.getLogger().info("OUTPUT MANAGER : Sheets cache hashmap loaded.");
 	}
 	
-	public void loadSheetContent() {
+	public void reloadSheetContent() {
 		//retrieve the content from each loaded sheet in hashmap, and apply to said sheet. 
 		for(OutputSheet sheet : sheets.values()) {
-			sheet.setContents(writer.loadContentFromSheet(sheet));
+			sheet.setContents(writer.readFromSheet(sheet));
 		}
 	}
 	
@@ -156,7 +146,7 @@ public class OutputManager {
 			if(!sheets.containsKey(key)) {
 				OutputSheet newSheet = writer.makeSheet(key,100,55);
 				created++;
-				sheets.put(key, newSheet);
+				sheets.put(key, new HandledOutputSheet(newSheet,getSheetGetter(newSheet)));
 			}
 		}
 		if(created==0) {
@@ -195,23 +185,27 @@ public class OutputManager {
 		sheet = writer.writeToSheet(sheet);
 	}
 	
-	public void initSubManagers() {
-		if(gsc==null) {
-			gsc = new GoogleSearchConsoleManager(sheets.get("GSC"));
+	public void updateAllSheets() {
+		for(HandledOutputSheet hsheet : sheets.values()) {
+			if(hsheet.update()) {
+				writer.writeToSheet(hsheet);
+			}
 		}
-		if(gmb==null) {
-			gmb = new GoogleMyBusinessManager(sheets.get("GMB"));
+	}
+	
+	public GoogleGet getSheetGetter(OutputSheet sheet) {
+		String t = sheet.getTitle();
+		GoogleGet getter = null;
+		if(t.equals("GSC")) {
+			getter = new GoogleSearchConsole();
+		} else if(t.equals("GMB")) {
+			getter = new GoogleMyBusiness();
+		} else if(t.equals("Adwords")) {
+			getter = new GoogleAdwords();
+		} else if(t.equals("Analytics")) {
+			getter = new GoogleAnalytics();
 		}
-		if(adwords==null) {
-			adwords = new GoogleAdwordsManager(sheets.get("Adwords"));
-		}
-		if(analytics==null) {
-			analytics = new GoogleAnalyticsManager(sheets.get("Analytics"));
-		}
-		submanagers.put("GSC", gsc);
-		submanagers.put("GMB", gmb);
-		submanagers.put("Adwords", adwords);
-		submanagers.put("Analytics", analytics);
+		return getter;
 	}
 	
 	public boolean reset() {
@@ -241,79 +235,6 @@ public class OutputManager {
 
 	public long getLastUpdateTime() {
 		return lastUpdateMillis;
-	}
-
-	public GoogleSearchConsoleManager getGSCManager() {
-		return gsc; 
-	}
-	
-	public GoogleAnalyticsManager getAnalyticsManager() {
-		return analytics;
-	}
-	
-	public GoogleAdwordsManager getAdwordsManager() {
-		return adwords;
-	}
-	
-	public GoogleMyBusinessManager getGMBManager() {
-		return gmb;
-	}
-	
-	public SubManager getManagerByString(String name) {
-		return submanagers.get(name);
-	}
-	
-	public class SubManager {
-		private OutputSectionExecutor exec; 
-		private OutputSheet sheet;
-		
-		public SubManager(OutputSheet sheet, GoogleGet getter) {
-			this.sheet = sheet;
-			exec = new OutputSectionExecutor(sheet,getter);
-		}
-
-		public void loadAll() {
-			sheet = exec.writeAll();
-			if(sheet.getContents()!=null) {
-			writer.writeToSheet(sheet);
-			}
-		}
-		
-		public OutputSectionExecutor getExecutor() {
-			return exec;
-		}
-	}
-	
-	private class GoogleSearchConsoleManager extends SubManager{
-
-		public GoogleSearchConsoleManager(OutputSheet sheet) {
-			super(sheet, new GoogleSearchConsole());
-		}
-		
-	}
-
-	private class GoogleAnalyticsManager extends SubManager{
-
-		public GoogleAnalyticsManager(OutputSheet sheet) {
-			super(sheet, new GoogleAnalytics());
-		}
-		
-	}
-	
-	private class GoogleAdwordsManager extends SubManager{
-
-		public GoogleAdwordsManager(OutputSheet sheet) {
-			super(sheet, new GoogleAdwords());
-		}
-		
-	}
-	
-	private class GoogleMyBusinessManager extends SubManager{
-
-		public GoogleMyBusinessManager(OutputSheet sheet) {
-			super(sheet, new GoogleMyBusiness());
-		}
-		
 	}
 	
 	private class ComplianceManager {
