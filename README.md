@@ -1,2 +1,2 @@
-# SEODA-Core
+# SEODACore
 Core library for SEODA. 
