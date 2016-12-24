@@ -20,6 +20,7 @@ import cc.holstr.SEODA.SEODACore.output.model.HandledOutputSheet;
 import cc.holstr.SEODA.SEODACore.output.model.OutputSheet;
 import cc.holstr.SEODA.SEODACore.output.model.TemplateSheet;
 import cc.holstr.SEODA.SEODACore.properties.ApplicationProperties;
+import cc.holstr.SEODA.SEODACore.properties.Properties;
 import cc.holstr.util.ZMisc;
 
 public class OutputManager {
@@ -52,7 +53,7 @@ public class OutputManager {
 	
 	public void define(int year) {
 		this.year = year;
-		writer = new GoogleSheetsWriter(year+"");
+		writer = new GoogleSheetsWriter(Properties.getConfig().getString("sheet."+Calendar.getInstance().get(Calendar.YEAR)));
 		sheets = new HashMap<String, HandledOutputSheet>();
 		requiredSheetLayouts = new HashMap<String, TemplateSheet>();
 		
@@ -85,7 +86,7 @@ public class OutputManager {
 		for(OutputSheet sheet : writer.getUpdatedSheets()) {
 			String title = sheet.getTitle();
 			sheet.setContents(writer.readFromSheet(sheet));
-			sheets.put(title, new HandledOutputSheet(sheet, getSheetGetter(sheet)));
+			sheets.put(title, new HandledOutputSheet(sheet, getSheetGetter(sheet),writer));
 		}
 		SEODALogger.getLogger().info("OUTPUT MANAGER : Sheets cache hashmap loaded.");
 	}
@@ -146,7 +147,7 @@ public class OutputManager {
 			if(!sheets.containsKey(key)) {
 				OutputSheet newSheet = writer.makeSheet(key,100,55);
 				created++;
-				sheets.put(key, new HandledOutputSheet(newSheet,getSheetGetter(newSheet)));
+				sheets.put(key, new HandledOutputSheet(newSheet,getSheetGetter(newSheet),writer));
 			}
 		}
 		if(created==0) {

@@ -38,14 +38,12 @@ public class GoogleSheetsWriter {
 	private HandledGoogleHttpHelper httpHelper;
 
 	// year as string ex. "2016" or "current";
-	public GoogleSheetsWriter(String year) {
-		if (year.equals("current"))
-			year = Calendar.getInstance().get(Calendar.YEAR) + "";
-		init(year);
+	public GoogleSheetsWriter(String spreadsheetID) {
+		init(spreadsheetID);
 	}
 
-	private void init(String year) {
-		currentSpreadsheet = (String) Properties.getConfig().getProperty("sheet." + year);
+	private void init(String spreadsheetID) {
+		currentSpreadsheet = spreadsheetID;
 		if (GoogleOAuth.isSimple()) {
 			if (GoogleOAuth.isSimpleAuthorized()) {
 				credential = GoogleOAuth.getSimpleAuth().getCredential();
